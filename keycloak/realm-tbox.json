@@ -17,10 +17,10 @@
   },
   "users": [
     {
-      "username": "alice",
+      "username": "tbox",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Alice",
+      "firstName": "tbox",
       "lastName": "Demo",
       "email": "[email protected]",
       "credentials": [
