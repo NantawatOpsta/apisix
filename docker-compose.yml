@@ -102,6 +102,10 @@ services:
 networks:
   tbox-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+          gateway: 172.26.0.1
 
 volumes:
   kc-db:
