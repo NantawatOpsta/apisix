@@ -1,0 +1,6 @@
+.git
+.opencode
+README*
+*.md
+server
+/out/

@@ -1,0 +1,7 @@
+.env
+keycloak/data/
+keycloak/.env
+*.log
+.DS_Store
+services/*/service-a
+services/*/service-b

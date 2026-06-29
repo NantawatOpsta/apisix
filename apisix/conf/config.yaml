@@ -1,0 +1,26 @@
+---
+deployment:
+  role: traditional
+  role_traditional:
+    config_provider: yaml
+  admin:
+    admin_key: ""  # standalone mode ignores; only used by Admin API which we do not enable
+  etcd:
+    prefix: "/apisix"
+    host:
+      - "http://etcd:2379"
+
+apisix:
+  enable_admin: false          # standalone mode, no Admin API
+  enable_dev_mode: true
+  enable_standalone: true
+  config_center: yaml
+  ssl:
+    enable: false
+  listen:
+    - port: 9080
+  stream:
+    - enable: false
+
+ext-plugin:
+  enable: false

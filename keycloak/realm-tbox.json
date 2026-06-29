@@ -1,0 +1,59 @@
+{
+  "realm": "tbox",
+  "enabled": true,
+  "accessTokenLifespan": 1800,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "roles": {
+    "realm": [
+      { "name": "tbox-user", "description": "Tbox demo user role" }
+    ]
+  },
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Demo",
+      "email": "[email protected]",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["tbox-user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "apisix-gateway",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "80a1f14355b25096a4ac7049c5f287d2b05f0da117f37770d873909526268cf8",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:9080/cb",
+        "http://localhost:9080/cb/*",
+        "http://localhost:9080/*"
+      ],
+      "webOrigins": ["*"],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:9080/*"
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# Standalone APISIX config. Loaded by entrypoint command in docker-compose.
+#
+# Flow per request that hits APISIX on :9080:
+#   - If session cookie absent AND no valid token -> redirect to Keycloak authorize.
+#   - After callback, APISIX exchanges code for tokens, stores session,
+#     and forwards request to upstream with `X-Userinfo` header.
+#
+# service-a upstream is reachable as `service-a:3000` on the docker network.
+
+upstreams:
+  - id: service-a-up
+    name: service-a-up
+    type: roundrobin
+    nodes:
+      - host: service-a
+        port: 3000
+        weight: 1
+
+routes:
+  - id: svc-a-root
+    name: svc-a-root
+    uri: /*
+    upstream_id: service-a-up
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: "$ENV://KEYCLOAK_CLIENT_SECRET"
+        discovery: "http://keycloak:8080/realms/tbox/.well-known/openid-configuration"
+        redirect_uri: "http://localhost:9080/cb"
+        logout_path: /logout
+        post_logout_redirect_uri: "http://localhost:9080/"
+        bearer_only: false
+        ssl_verify: false
+        set_userinfo_header: true
+        set_id_token_header: true
+        scope: "openid email profile"
+        session:
+          secret: "$ENV://APISIX_SESSION_SECRET"
+          cookie_name: apisix_session
+          cookie_path: /
+          cookie_secure: false
+          cookie_http_only: true
+          cookie_same_site: "Lax"
