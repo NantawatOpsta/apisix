@@ -25,7 +25,7 @@ routes:
       openid-connect:
         client_id: apisix-gateway
         client_secret: "$ENV://KEYCLOAK_CLIENT_SECRET"
-        discovery: "http://keycloak:8080/realms/tbox/.well-known/openid-configuration"
+        discovery: "http://172.26.0.1:8080/realms/tbox/.well-known/openid-configuration"
         redirect_uri: "http://localhost:9080/cb"
         logout_path: /logout
         post_logout_redirect_uri: "http://localhost:9080/"

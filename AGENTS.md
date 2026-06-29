@@ -69,6 +69,8 @@ curl -i http://localhost:9080/      # expect 302 -> Keycloak
 docker compose down -v              # tear down + delete Keycloak DB volume
 ```
 
+- **APISIX discovery URL** ใน `apisix/apisix.yaml` ใช้ host gateway IP (`172.26.0.1`) แทน internal hostname `keycloak` เพื่อให้ browser resolve ได้เมื่อ follow redirect ถ้า `docker compose down && up` แล้ว IP เปลี่ยน (compose ไม่ pin IPAM subnet) ให้ update ค่า IP ในบรรทัดนี้ให้ตรงกับ gateway ปัจจุบัน (`docker network inspect tbox_tbox-net --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'`)
+
 Bypass checks (manual):
 
 ```sh
