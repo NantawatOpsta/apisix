@@ -17,7 +17,9 @@ type userinfo struct {
 const requiredRole = "tbox-user"
 
 func main() {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ReadBufferSize: 1 << 20,
+	})
 
 	app.Use(requireIdentity)
 
