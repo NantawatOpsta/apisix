@@ -4,7 +4,21 @@ deployment:
   role_traditional:
     config_provider: yaml
   admin:
-    admin_key: ""  # standalone mode ignores; only used by Admin API which we do not enable
+    # schema requires a list of key objects; standalone + enable_admin=false
+    # below means this is never used to authenticate Admin API requests.
+    #
+    # The hardcoded admin_key below is INTENTIONALLY DEMO-ONLY.
+    # Because enable_admin above defaults to false, this key is dead at runtime
+    # — APISIX never consults it for authentication on this image.
+    # If you flip enable_admin: true, rotate this key first:
+    #   - move to .env / APISIX_ADMIN_KEY (use $ENV:// in admin_key[0].key)
+    #   - see SECRET_REGEN.md for the rotation procedure
+    #   - also rotate keycloak/tbox-realm.json's KEYCLOAK_CLIENT_SECRET
+    #     (the realm client's secret is independent of admin_key)
+    admin_key:
+      - name: admin
+        key: "2LclAgQpvh6JJHdtg6LSCcXaiE08GhAb"
+        role: super
   etcd:
     prefix: "/apisix"
     host:

@@ -36,8 +36,5 @@ routes:
         scope: "openid email profile"
         session:
           secret: "$ENV://APISIX_SESSION_SECRET"
-          cookie_name: apisix_session
-          cookie_path: /
-          cookie_secure: false
-          cookie_http_only: true
-          cookie_same_site: "Lax"
+
+#END

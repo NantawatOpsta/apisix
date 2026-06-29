@@ -42,7 +42,7 @@ tbox/
 ├── .gitignore                  excludes .env
 ├── SECRET_REGEN.md             how to rotate the demo client secret
 ├── keycloak/
-│   └── realm-tbox.json         realm export: realm `tbox`, client `apisix-gateway`,
+│   └── tbox-realm.json         realm export: realm `tbox`, client `apisix-gateway`,
 │                               role `tbox-user`, user `alice/password`
 ├── apisix/
 │   ├── apisix.yaml             standalone route/upstream + openid-connect plugin
@@ -90,18 +90,18 @@ docker run --rm --network tbox_tbox-net alpine wget -qO- service-a:3000/
   - 403 if `realm_access.roles` does not include `tbox-user`
   - else lets the handler respond with `Hello, <preferred_username>! (role: tbox-user)`
 
-To change the required role: edit `requiredRole` constant in `services/service-a/server.go:14` AND add the role to `keycloak/realm-tbox.json` AND assign it to `users[].realmRoles`.
+To change the required role: edit `requiredRole` constant in `services/service-a/server.go:14` AND add the role to `keycloak/tbox-realm.json` AND assign it to `users[].realmRoles`.
 
 ## Secrets
 
 | Variable                 | Lives in                                  | Notes |
 | ------------------------ | ----------------------------------------- | ----- |
-| `KEYCLOAK_CLIENT_SECRET` | `.env` + `keycloak/realm-tbox.json` client | Demo value committed for one-command bring-up. **Rotate before any non-demo use** — see `SECRET_REGEN.md`. |
+| `KEYCLOAK_CLIENT_SECRET` | `.env` + `keycloak/tbox-realm.json` client | Demo value committed for one-command bring-up. **Rotate before any non-demo use** — see `SECRET_REGEN.md`. |
 | `KEYCLOAK_ADMIN_PASSWORD`| `.env`                                    | Admin user at http://localhost:8080/admin (master realm) |
 | `POSTGRES_PASSWORD`      | `.env`                                    | Keycloak DB only |
 | `APISIX_SESSION_SECRET`  | `.env`                                    | Must be ≥16 chars; used to encrypt session cookie |
 
-Important: the demo client secret lives verbatim in `keycloak/realm-tbox.json` for one-command setup. If you keep that file in version control, treat the secret as public and rotate immediately in any real deployment.
+Important: the demo client secret lives verbatim in `keycloak/tbox-realm.json` for one-command setup. If you keep that file in version control, treat the secret as public and rotate immediately in any real deployment.
 
 ## Custom agent system (`.opencode/agents/`)
 
@@ -130,4 +130,4 @@ If the user is using the default opencode agent (no `.opencode/agents/bob.md` re
 - No top-level `README`, no `LICENSE`, no CI workflows, no pre-commit config. Don't go looking for them.
 - The `.opencode/node_modules/`, `package.json`, `package-lock.json` under `.opencode/` are gitignored (see `.opencode/.gitignore`); don't commit them.
 - Comments in code: there are none in the original stubs, but `services/service-a/server.go` does use comments sparingly where fiber idioms need explanation. Match that style — don't add gratuitous commentary.
-- `.env` is gitignored; demo client secret is intentionally also in `keycloak/realm-tbox.json` so the stack runs from one command. See `SECRET_REGEN.md`.
+- `.env` is gitignored; demo client secret is intentionally also in `keycloak/tbox-realm.json` so the stack runs from one command. See `SECRET_REGEN.md`.
