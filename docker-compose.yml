@@ -35,7 +35,6 @@ services:
     depends_on:
       etcd:
         condition: service_healthy
-    env_file: .env
     environment:
       APISIX_STANDALONE_MODE: "true"
     ports:

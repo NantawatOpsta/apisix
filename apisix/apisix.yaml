@@ -24,7 +24,7 @@ routes:
     plugins:
       openid-connect:
         client_id: apisix-gateway
-        client_secret: "$ENV://KEYCLOAK_CLIENT_SECRET"
+        client_secret: "80a1f14355b25096a4ac7049c5f287d2b05f0da117f37770d873909526268cf8"
         discovery: "http://172.26.0.1:8080/realms/tbox/.well-known/openid-configuration"
         redirect_uri: "http://localhost:9080/cb"
         logout_path: /logout
@@ -35,6 +35,6 @@ routes:
         set_id_token_header: true
         scope: "openid email profile"
         session:
-          secret: "$ENV://APISIX_SESSION_SECRET"
+          secret: "change-this-in-prod-32chars-min"
 
 #END
