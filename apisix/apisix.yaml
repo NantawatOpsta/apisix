@@ -45,9 +45,13 @@ routes:
           secret: "change-this-in-prod-32chars-min"
   - id: svc-b-root
     name: svc-b-root
-    uri: /service-b/*
+    uri: /service-b*
     upstream_id: service-b-up
     plugins:
+      proxy-rewrite:
+        regex_uri:
+          - "^/service-b(.*)$"
+          - "/$1"
       openid-connect:
         client_id: apisix-gateway
         client_secret: "80a1f14355b25096a4ac7049c5f287d2b05f0da117f37770d873909526268cf8"

@@ -30,6 +30,7 @@ user ─► APISIX ─┐
 | keycloak-db | -         | 5432      | postgres:16-alpine                     |
 | etcd        | -         | 2379/2380 | quay.io/coreos/etcd:v3.5.13            |
 | service-a   | -         | 3000      | built from `services/service-a`        |
+| service-b   | -         | 3001      | built from `services/service-b`        |
 
 `service-a` has **no host port** on purpose. It is only reachable via APISIX, which adds `X-Userinfo` after validating the OIDC token.
 
@@ -37,15 +38,15 @@ user ─► APISIX ─┐
 
 ```
 tbox/
-├── docker-compose.yml          5 services + shared bridge network `tbox-net`
+├── docker-compose.yml          6 services + shared bridge network `tbox-net`
 ├── .env / .env.example         secret-bearing env; .env is gitignored
 ├── .gitignore                  excludes .env
 ├── SECRET_REGEN.md             how to rotate the demo client secret
 ├── keycloak/
 │   └── tbox-realm.json         realm export: realm `tbox`, client `apisix-gateway`,
-│                               role `tbox-user`, user `alice/password`
+│                               role `tbox-user`, user `tbox/password`
 ├── apisix/
-│   ├── apisix.yaml             standalone route/upstream + openid-connect plugin
+│   ├── apisix.yaml             standalone routes/upstreams (svc-a-root + svc-b-root) + openid-connect plugin
 │   └── conf/config.yaml        admin disabled, etcd host = etcd:2379
 └── services/
     ├── service-a/              in compose; authz middleware in server.go:18
@@ -53,23 +54,28 @@ tbox/
     │   ├── go.mod / go.sum     pinned to go 1.26.4
     │   ├── Dockerfile          golang:1.26.4-alpine → distroless
     │   └── .dockerignore
-    └── service-b/              NOT in compose; stub only. PORT 3000 COLLISION
-                                risk if both services are ever built — see
-                                `services/service-b/server.go:16`. Fix: change
-                                one to a different port before bringing both up.
+    └── service-b/              in compose; authz middleware same pattern as
+                                service-a (extractIdentity at server.go:38 +
+                                requireRole at server.go:58); port :3001;
+                                requiredRole = tbox-user-service-b
+        ├── server.go           Fiber v3 on :3001
+        ├── go.mod / go.sum     pinned to go 1.26.4
+        └── Dockerfile          golang:1.26.4-alpine → distroless, EXPOSE 3001
 ```
 
 ## Bring-up
 
 ```sh
 cp .env.example .env                # demo values already work
-docker compose up -d
+docker compose up -d --build        # first up also builds service-a/service-b images
 curl -i http://localhost:9080/      # expect 302 -> Keycloak
-# browser: login as alice / password  -> 200 "Hello, alice! (role: tbox-user)"
+# browser: login as tbox / password  -> 200 "Hello, tbox! (role: tbox-user)"
+curl -i http://localhost:9080/service-b/  # expect 302 -> Keycloak
+# browser: login as tbox / password  -> 200 "Hello, tbox! (role: tbox-user-service-b)"
 docker compose down -v              # tear down + delete Keycloak DB volume
 ```
 
-- **APISIX discovery URL** ใน `apisix/apisix.yaml` ใช้ host gateway IP (`172.26.0.1`) แทน internal hostname `keycloak` เพื่อให้ browser resolve ได้เมื่อ follow redirect ถ้า `docker compose down && up` แล้ว IP เปลี่ยน (compose ไม่ pin IPAM subnet) ให้ update ค่า IP ในบรรทัดนี้ให้ตรงกับ gateway ปัจจุบัน (`docker network inspect tbox_tbox-net --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'`)
+- **APISIX discovery URL** ใน `apisix/apisix.yaml` ใช้ host gateway IP (`172.26.0.1`) แทน internal hostname `keycloak` เพื่อให้ browser resolve ได้เมื่อ follow redirect compose pin IPAM subnet ไว้แล้ว (`172.26.0.0/16`, gateway `172.26.0.1`) ดังนั้น `docker compose down && up` แล้ว IP ไม่เปลี่ยน แต่คง `docker network inspect tbox_tbox-net --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'` ไว้เผื่อตรวจสอบ
 
 Bypass checks (manual):
 
@@ -79,6 +85,9 @@ docker compose exec service-a /app/server   # unreachable from host without exec
 # Or another container on the same network:
 docker run --rm --network tbox_tbox-net alpine wget -qO- service-a:3000/
 # -> 401
+# Same for service-b:
+docker run --rm --network tbox_tbox-net alpine wget -qO- service-b:3001/
+# -> 401
 ```
 
 ## Authz rules
@@ -87,12 +96,14 @@ docker run --rm --network tbox_tbox-net alpine wget -qO- service-a:3000/
   - `X-Userinfo` (JSON of userinfo claims; default behavior of `set_userinfo_header: true`)
   - `X-ID-Token` (raw ID token)
   - `X-Access-Token` (raw access token)
-- `services/service-a/server.go:18` middleware (`requireIdentity`) reads `X-Userinfo`, JSON-decodes it, and:
-  - 401 if missing or unparseable
-  - 403 if `realm_access.roles` does not include `tbox-user`
-  - else lets the handler respond with `Hello, <preferred_username>! (role: tbox-user)`
+- `services/service-a/server.go:38` `extractIdentity` base64-decodes `X-Userinfo` then JSON-decodes it; `requireRole` at `server.go:58` enforces the role:
+  - 401 if `X-Userinfo` missing or unparseable
+  - 403 if `realm_access.roles` does not include the required role
+  - else handler responds with HTML: `<h1>Hello, <preferred_username>! (role: tbox-user)</h1>` plus `X-Userinfo`, `X-ID-Token`, `X-Access-Token` blocks
 
-To change the required role: edit `requiredRole` constant in `services/service-a/server.go:14` AND add the role to `keycloak/tbox-realm.json` AND assign it to `users[].realmRoles`.
+`services/service-b/server.go` follows the same authz pattern, with `requiredRole = "tbox-user-service-b"` at `server.go:20`, listening on `:3001`.
+
+To change the required role: edit the `requiredRole` constant in the relevant service's `server.go` AND add the role to `keycloak/tbox-realm.json` (`roles.realm[]`) AND assign it to `users[].realmRoles`.
 
 ## Secrets
 
@@ -123,9 +134,9 @@ If the user is using the default opencode agent (no `.opencode/agents/bob.md` re
 
 - Each `services/*` is its **own Go module** (separate `go.mod`/`go.sum`). There is no root module — run `go` commands from inside a service dir, not from the repo root.
 - Go toolchain pinned to `1.26.4` in both `go.mod` files; ensure that version is available locally or `go.work`-style version managers will fail.
-- Both services use `github.com/gofiber/fiber/v3` and both hardcode `app.Listen(":3000")` — `service-a` at `services/service-a/server.go:32`, `service-b` at `services/service-b/server.go:16`. They will collide if run together. `service-b` is currently NOT in compose; keep it that way or change its port before adding it.
+- Both services use `github.com/gofiber/fiber/v3`. `service-a` listens on `:3000` (`services/service-a/server.go:35`); `service-b` listens on `:3001` (`services/service-b/server.go:35`). They run together without port collision.
 - No `Makefile`, no test files, no lint config, no CI. `go test ./...` and `go vet ./...` work per-service but there is nothing to run yet.
-- `service-a` and `service-b` are NOT parallel starting points any more: `service-a` now has an authz middleware on top of the original stub.
+- Both services share the same authz pattern (`extractIdentity` + `requireRole`). `service-a` requires role `tbox-user`; `service-b` requires role `tbox-user-service-b`. Each is a valid standalone starting point and both are wired into compose.
 
 ## Conventions
 

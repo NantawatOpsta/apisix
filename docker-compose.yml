@@ -3,7 +3,7 @@
 # Bring up:  docker compose up -d
 # Tear down: docker compose down -v
 # Verify:    curl -i http://localhost:9080/        -> 302 -> Keycloak
-#            Login alice/password                   -> 200 Hello, alice! (role: tbox-user)
+#            Login tbox/password                    -> 200 Hello, tbox! (role: tbox-user)
 #
 # See tbox/AGENTS.md for ports, env, role, and gotchas.
 
