@@ -48,6 +48,28 @@ routes:
     uri: /service-b*
     upstream_id: service-b-up
     plugins:
+      serverless-pre-function:
+        phase: access
+        functions:
+          - |
+            return function(conf, ctx)
+              local core = require("apisix.core")
+              local required = "tbox-user-service-b"
+              local b64 = core.request.header(ctx, "X-Userinfo")
+              if not b64 then
+                return core.response.exit(401, "missing identity header")
+              end
+              local ok, raw = pcall(ngx.decode_base64, b64)
+              if not ok or not raw then
+                return core.response.exit(401, "malformed X-Userinfo")
+              end
+              local info = require("cjson.safe").decode(raw)
+              local roles = info and info.realm_access and info.realm_access.roles or {}
+              for _, r in ipairs(roles) do
+                if r == required then return end
+              end
+              return core.response.exit(403, "forbidden: missing role " .. required)
+            end
       proxy-rewrite:
         regex_uri:
           - "^/service-b(.*)$"
