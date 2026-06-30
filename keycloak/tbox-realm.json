@@ -12,7 +12,10 @@
   "bruteForceProtected": false,
   "roles": {
     "realm": [
-      { "name": "tbox-user", "description": "Tbox demo user role" }
+      {
+        "name": "tbox-user",
+        "description": "Tbox demo user role"
+      }
     ]
   },
   "users": [
@@ -30,7 +33,9 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["tbox-user"]
+      "realmRoles": [
+        "tbox-user"
+      ]
     }
   ],
   "clients": [
@@ -46,14 +51,33 @@
         "http://localhost:9080/cb/*",
         "http://localhost:9080/*"
       ],
-      "webOrigins": ["*"],
+      "webOrigins": [
+        "*"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
       "protocol": "openid-connect",
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:9080/*"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "multivalued": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     }
   ]
 }
