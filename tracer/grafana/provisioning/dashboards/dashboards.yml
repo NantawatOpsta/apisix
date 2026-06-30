@@ -1,0 +1,18 @@
+apiVersion: 1
+
+providers:
+  - name: tbox-dashboards
+    orgId: 1
+    folder: ''
+    folderUid: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 60
+    allowUiUpdates: false
+    options:
+      # Path must exist and be readable by Grafana, otherwise the provider
+      # silently fails to register. We point at /etc/grafana/dashboards (a
+      # writable but empty directory inside the image) to keep the file
+      # mount lean.
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

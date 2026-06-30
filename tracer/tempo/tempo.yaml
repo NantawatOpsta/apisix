@@ -1,0 +1,45 @@
+# Tempo 2.10.7 — local filesystem storage, OTLP receivers, single-binary mode.
+# Compatible with the example at:
+#   https://github.com/grafana/tempo/blob/v2.10.7/example/docker-compose/local/tempo.yaml
+
+server:
+  http_listen_port: 3200
+  log_level: info
+
+stream_over_http_enabled: true
+
+query_frontend:
+  search:
+    max_duration: 0   # 0 = no limit (default in v2.x; explicit for clarity)
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  # Cut the headblock more aggressively than the 30m default for a demo.
+  max_block_duration: 5m
+  trace_idle_period: 10s
+
+compactor:
+  compaction:
+    block_retention: 168h   # 7 days; demo value
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# Multi-tenancy is off; no overrides needed for a single-tenant demo.
+# (The previous `overrides.defaults.ingestion.max_spans_per_trace` block was
+# removed: that field is not part of Tempo 2.10.7's IngestionOverrides struct,
+# so including it made the binary refuse to start and broke grafana's
+# `tempo:3200` resolution for the whole tracer stack.)

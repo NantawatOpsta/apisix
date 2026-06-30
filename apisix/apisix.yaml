@@ -23,12 +23,31 @@ upstreams:
         port: 3001
         weight: 1
 
+# Plugin metadata — applied to all instances of the opentelemetry plugin.
+# Without this, the default collector address (127.0.0.1:4318) is used.
+plugin_metadata:
+  opentelemetry:
+    resource:
+      service.name: APISIX
+    collector:
+      address: otel-collector:4318
+      request_timeout: 3
+    batch_span_processor:
+      drop_on_queue_full: false
+      max_queue_size: 1024
+      batch_timeout: 2
+      inactive_timeout: 1
+      max_export_batch_size: 16
+
 routes:
   - id: svc-a-root
     name: svc-a-root
     uri: /*
     upstream_id: service-a-up
     plugins:
+      opentelemetry:
+        sampler:
+          name: always_on
       openid-connect:
         client_id: apisix-gateway
         client_secret: "80a1f14355b25096a4ac7049c5f287d2b05f0da117f37770d873909526268cf8"
@@ -48,6 +67,9 @@ routes:
     uri: /service-b*
     upstream_id: service-b-up
     plugins:
+      opentelemetry:
+        sampler:
+          name: always_on
       serverless-pre-function:
         phase: access
         functions:

@@ -1,0 +1,64 @@
+# OpenTelemetry Collector — tbox tracer pipeline.
+#
+# Listens on :4317 (gRPC) and :4318 (HTTP) on the tbox-net network.
+# Receives traces from APISIX (over HTTP) and from the Go services (gRPC or HTTP).
+# Adds service.namespace=tbox to every resource, batches, and ships to Tempo over gRPC.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # memory_limiter MUST be first so it can actually protect downstream.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  # Inject a stable service.namespace attribute on every resource — handy in Grafana/Tempo
+  # queries (`{ resource.service.namespace = "tbox" }`).
+  attributes/tbox:
+    actions:
+      - key: service.namespace
+        value: tbox
+        action: insert
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  # OTLP/gRPC to Tempo. Tempo listens on :4317 by default.
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 5000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 500ms
+      max_interval: 5s
+  # Verbose logging for local dev. Disable or remove for prod.
+  debug:
+    verbosity: normal
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  health_check: {}
+
+service:
+  telemetry:
+    logs:
+      level: info
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/tbox, batch]
+      exporters: [otlp_grpc/tempo, debug]

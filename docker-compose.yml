@@ -7,6 +7,12 @@
 #
 # See tbox/AGENTS.md for ports, env, role, and gotchas.
 
+# Pull in the OTel tracer stack (otel-collector, tempo, grafana) from a
+# separate file. The included file declares its own services and the
+# external network `tbox-net` (same one this file creates).
+include:
+  - path: ./tracer/docker-compose.tracer.yml
+
 services:
   etcd:
     image: quay.io/coreos/etcd:v3.5.13
@@ -37,6 +43,8 @@ services:
         condition: service_healthy
     environment:
       APISIX_STANDALONE_MODE: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "9080:9080"
     volumes:
@@ -94,6 +102,11 @@ services:
       context: ./services/service-a
       dockerfile: Dockerfile
     container_name: tbox-service-a
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: service-a
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=tbox
     networks:
       - tbox-net
     # No host port: reachable only via APISIX. Reaching it directly
@@ -104,6 +117,11 @@ services:
       context: ./services/service-b
       dockerfile: Dockerfile
     container_name: tbox-service-b
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: service-b
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=tbox
     networks:
       - tbox-net
     # No host port: reachable only via APISIX.

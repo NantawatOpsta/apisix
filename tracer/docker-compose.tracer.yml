@@ -1,0 +1,80 @@
+# OpenTelemetry tracer stack for tbox.
+#
+# Bring up the main stack first (`docker compose up -d`), then this one
+# (`docker compose -f tracer/docker-compose.tracer.yml up -d`).
+#
+# Verify:
+#   - OTel collector:  docker compose -f tracer/docker-compose.tracer.yml logs otel-collector
+#   - Tempo:           docker compose -f tracer/docker-compose.tracer.yml logs tempo
+#   - Tempo readiness: curl -s http://localhost:3200/ready     # (only if you expose :3200 — not done here)
+#   - Grafana UI:      open http://localhost:3000  (admin / GF_SECURITY_ADMIN_PASSWORD from .env)
+
+services:
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.155.0
+    container_name: tbox-otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+      - tbox-net
+
+  tempo:
+    image: grafana/tempo:2.10.7
+    container_name: tbox-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    # init container chowns the volume to uid 10001 (Tempo runs unprivileged).
+    # The busybox image is small and ubiquitous; no separate `init` service required —
+    # `user:` only applies to the entrypoint process, so we use the `user` directive on the
+    # tempo service with the chown as a pre-step in an init container below.
+    depends_on:
+      tempo-init:
+        condition: service_completed_successfully
+    networks:
+      - tbox-net
+
+  tempo-init:
+    image: busybox:1.37
+    container_name: tbox-tempo-init
+    user: root
+    entrypoint: ["sh", "-c", "chown -R 10001:10001 /var/tempo"]
+    volumes:
+      - tempo-data:/var/tempo
+    networks:
+      - tbox-net
+    restart: "no"
+
+  grafana:
+    image: grafana/grafana:13.0.3
+    container_name: tbox-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - tbox-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      - tempo
+
+volumes:
+  tempo-data:
+  grafana-data:
+
+networks:
+  tbox-net:
+    name: tbox_tbox-net

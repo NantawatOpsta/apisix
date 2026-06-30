@@ -42,3 +42,13 @@ ext-plugin:
 nginx_config:
   http_configuration_snippet: |
     large_client_header_buffers 16 32k;
+
+# Explicit plugin allowlist. Without this only the default plugin set
+# is loaded and `opentelemetry` would be silently dropped.
+plugins:
+  - openid-connect          # svc-a-root + svc-b-root
+  - serverless-pre-function # svc-b-root role check
+  - proxy-rewrite           # svc-b-root uri rewrite
+  - opentelemetry           # tracer — added in this change
+  - redirect                # implicit dep of openid-connect
+  - response-rewrite        # implicit dep of openid-connect
