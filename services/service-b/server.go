@@ -17,8 +17,6 @@ type userinfo struct {
 	} `json:"realm_access"`
 }
 
-const requiredRole = "tbox-user-service-b"
-
 const (
 	localIdentity    = "identity"
 	localIDToken     = "id_token"
@@ -30,7 +28,7 @@ func main() {
 		ReadBufferSize: 1 << 20,
 	})
 
-	app.Get("/", extractIdentity, requireRole, handler)
+	app.Get("/", extractIdentity, handler)
 
 	log.Fatal(app.Listen(":3001"))
 }
@@ -53,19 +51,6 @@ func extractIdentity(c fiber.Ctx) error {
 	c.Locals(localIDToken, c.Get("X-ID-Token"))
 	c.Locals(localAccessToken, c.Get("X-Access-Token"))
 	return c.Next()
-}
-
-func requireRole(c fiber.Ctx) error {
-	ui, ok := c.Locals(localIdentity).(userinfo)
-	if !ok {
-		return c.Status(fiber.StatusInternalServerError).SendString("identity not extracted")
-	}
-	for _, r := range ui.RealmAccess.Roles {
-		if r == requiredRole {
-			return c.Next()
-		}
-	}
-	return c.Status(fiber.StatusForbidden).SendString("forbidden: missing role")
 }
 
 func handler(c fiber.Ctx) error {
