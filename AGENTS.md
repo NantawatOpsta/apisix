@@ -26,7 +26,7 @@ user ─► APISIX ─┐
 | Service     | Host port | Internal  | Image                                  |
 | ----------- | --------- | --------- | -------------------------------------- |
 | apisix      | 9080      | 9080      | apache/apisix:3.13.0-debian            |
-| keycloak    | 8080      | 8080      | quay.io/keycloak/keycloak:24.0         |
+| keycloak    | 8080      | 8080      | quay.io/keycloak/keycloak:26.6         |
 | keycloak-db | -         | 5432      | postgres:16-alpine                     |
 | etcd        | -         | 2379/2380 | quay.io/coreos/etcd:v3.5.13            |
 | service-a   | -         | 3000      | built from `services/service-a`        |
@@ -143,7 +143,7 @@ To change the required role: edit the `requiredRole` constant in the relevant se
 | Variable                 | Lives in                                  | Notes |
 | ------------------------ | ----------------------------------------- | ----- |
 | `KEYCLOAK_CLIENT_SECRET` | `.env` + `keycloak/tbox-realm.json` client | Demo value committed for one-command bring-up. **Rotate before any non-demo use** — see `SECRET_REGEN.md`. |
-| `KEYCLOAK_ADMIN_PASSWORD`| `.env`                                    | Admin user at http://localhost:8080/admin (master realm) |
+| `KC_BOOTSTRAP_ADMIN_PASSWORD`| `.env`                                    | Admin user at http://localhost:8080/admin (master realm) |
 | `POSTGRES_PASSWORD`      | `.env`                                    | Keycloak DB only |
 | `APISIX_SESSION_SECRET`  | `.env`                                    | Must be ≥16 chars; used to encrypt session cookie |
 
