@@ -99,6 +99,15 @@ services:
     # No host port: reachable only via APISIX. Reaching it directly
     # from the host requires `docker exec` or attaching another network.
 
+  service-b:
+    build:
+      context: ./services/service-b
+      dockerfile: Dockerfile
+    container_name: tbox-service-b
+    networks:
+      - tbox-net
+    # No host port: reachable only via APISIX.
+
 networks:
   tbox-net:
     driver: bridge

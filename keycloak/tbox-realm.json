@@ -15,6 +15,10 @@
       {
         "name": "tbox-user",
         "description": "Tbox demo user role"
+      },
+      {
+        "name": "tbox-user-service-b",
+        "description": "Tbox user role for service-b"
       }
     ]
   },
@@ -34,7 +38,8 @@
         }
       ],
       "realmRoles": [
-        "tbox-user"
+        "tbox-user",
+        "tbox-user-service-b"
       ]
     }
   ],

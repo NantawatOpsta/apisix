@@ -15,6 +15,13 @@ upstreams:
       - host: service-a
         port: 3000
         weight: 1
+  - id: service-b-up
+    name: service-b-up
+    type: roundrobin
+    nodes:
+      - host: service-b
+        port: 3001
+        weight: 1
 
 routes:
   - id: svc-a-root
@@ -29,6 +36,25 @@ routes:
         redirect_uri: "http://localhost:9080/cb"
         logout_path: /logout
         post_logout_redirect_uri: "http://localhost:9080/"
+        bearer_only: false
+        ssl_verify: false
+        set_userinfo_header: true
+        set_id_token_header: true
+        scope: "openid email profile"
+        session:
+          secret: "change-this-in-prod-32chars-min"
+  - id: svc-b-root
+    name: svc-b-root
+    uri: /service-b/*
+    upstream_id: service-b-up
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: "80a1f14355b25096a4ac7049c5f287d2b05f0da117f37770d873909526268cf8"
+        discovery: "http://172.26.0.1:8080/realms/tbox/.well-known/openid-configuration"
+        redirect_uri: "http://localhost:9080/cb"
+        logout_path: /logout
+        post_logout_redirect_uri: "http://localhost:9080/service-b/"
         bearer_only: false
         ssl_verify: false
         set_userinfo_header: true
