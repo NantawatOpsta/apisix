@@ -25,8 +25,12 @@ upstreams:
 
 # Plugin metadata — applied to all instances of the opentelemetry plugin.
 # Without this, the default collector address (127.0.0.1:4318) is used.
+#
+# In standalone YAML mode (config_provider: yaml), plugin_metadata MUST be a
+# list of objects each with `id` = plugin name. A dict keyed by plugin name
+# is silently dropped because config_yaml.lua iterates with ipairs().
 plugin_metadata:
-  opentelemetry:
+  - id: opentelemetry
     resource:
       service.name: APISIX
     collector:
